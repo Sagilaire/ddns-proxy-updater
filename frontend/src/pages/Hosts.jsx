@@ -48,13 +48,13 @@ function ProviderForm({ fields, value, onChange, redactExistingKeys = [] }) {
 }
 
 /**
- * Empty form for a NEW domain (or record) of a given provider.
- * Fills booleans with `false`, optional fields with empty strings.
+ * Seed a form values object from a provider-schema field list.
+ * Booleans default to `false` (or `field.default`), other types to ''.
+ * A missing/empty `fields` arg is allowed — returns {}.
  */
-function emptyFields(providerFields, providerType, recordFields) {
+function seedFormFromFields(fields) {
   const out = {};
-  const source = providerType === 'record' ? recordFields : providerFields;
-  for (const f of source) {
+  for (const f of fields || []) {
     out[f.key] = f.type === 'checkbox' ? (f.default ?? false) : '';
   }
   return out;
@@ -107,7 +107,7 @@ export default function Hosts() {
   function openAddDomain() {
     const provider = providers[0];
     if (!provider) return;
-    const form = { provider: provider.name, displayName: '', ...emptyFields(provider.domainFields, 'domain') };
+    const form = { provider: provider.name, displayName: '', ...seedFormFromFields(provider.domainFields) };
     setDomainForm(form);
     setDomainModal({ mode: 'add', provider: provider.name });
   }
@@ -122,7 +122,7 @@ export default function Hosts() {
     setDomainForm({
       provider: pname,
       displayName: '',
-      ...emptyFields(prov.domainFields, 'domain'),
+      ...seedFormFromFields(prov.domainFields),
     });
     setDomainModal({ mode: 'add', provider: pname });
   }
@@ -180,12 +180,16 @@ export default function Hosts() {
 
   function openAddRecord(domainId) {
     const d = domains.find((x) => x.id === domainId);
-    const prov = providerByName[d.provider];
-    setRecordForm({ ...emptyFields(prov.recordFields, 'record') });
+    const prov = providerByName[d?.provider];
+    setRecordForm({ ...seedFormFromFields(prov?.recordFields) });
     setRecordModal({ domainId, mode: 'add' });
   }
   function openEditRecord(domainId, r) {
-    setRecordForm({ ...(r.config || {}) });
+    const d = domains.find((x) => x.id === domainId);
+    const prov = providerByName[d?.provider];
+    // Seed missing fields first so newly-added schema keys show up empty
+    // even on records persisted before they existed.
+    setRecordForm({ ...seedFormFromFields(prov?.recordFields), ...(r.config || {}) });
     setRecordModal({ domainId, mode: 'edit', id: r.id });
   }
   function closeRecordModal() { setRecordModal(null); }
