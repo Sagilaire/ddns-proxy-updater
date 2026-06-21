@@ -1,17 +1,12 @@
 'use strict';
 
 const express = require('express');
+const { redact } = require('../services/Store');
 
 /**
  * /api/status — global snapshot for the Dashboard view.
+ * Uses the new domain/record model.
  */
-function redact(host) {
-  if (!host) return host;
-  const safe = { ...host, config: { ...host.config } };
-  if ('password' in safe.config) safe.config.password = '***redacted***';
-  return safe;
-}
-
 module.exports = function statusRoutesFactory({ store, ddnsManager, ipDetector }) {
   const router = express.Router();
 
@@ -22,8 +17,13 @@ module.exports = function statusRoutesFactory({ store, ddnsManager, ipDetector }
       publicIp: state.lastIp,
       lastIpCheckAt: state.lastIpCheckAt,
       periodSeconds: state.periodSeconds,
-      scheduler: ddnsManager.isRunning?.() ?? true,
-      hosts: store.getHosts().map(redact),
+      scheduler: ddnsManager.isRunning(),
+      domains: store.getDomains().map((d) => {
+        const safe = redact(d);
+        safe.recordCount = store.getRecordsForDomain(d.id).length;
+        return safe;
+      }),
+      records: store.getRecords().map((r) => redact(r)),
     });
   });
 

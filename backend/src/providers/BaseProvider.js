@@ -5,13 +5,16 @@
  *
  * Concrete providers MUST:
  *   - override static getName()
- *   - override static getSchema() with field definitions used by the UI
+ *   - override static getSchema() returning { domainFields, recordFields }
  *   - implement async update(ip) -> returning a normalized result
  *   - optionally implement async testConnection() -> true/false
  *
- * The constructor receives the resolved configuration for a single host.
- * Fields defined in the schema are pre-validated by the Store before they reach
- * here, but providers should still defensively validate.
+ * The constructor receives a flat, merged configuration for a single record:
+ *   { ...domainSettings, ...recordOverrides }
+ * (See DdnsManager._buildRecordConfig.)
+ *
+ * The Store validates domainFields and recordFields separately on the way in,
+ * but providers should still defensively validate the merged config they get.
  */
 class BaseProvider {
   constructor(config) {
@@ -24,7 +27,10 @@ class BaseProvider {
   }
 
   /**
-   * @returns {Array<{key:string,label:string,type:'text'|'password',required:boolean,help?:string}>}
+   * @returns {{domainFields: Array, recordFields: Array, label: string, help?: string}}
+   *
+   * domainFields — credentials / config attached to the DOMAIN (e.g. password, api token).
+   * recordFields — fields per-record (e.g. hostname label, TTL opt-in).
    */
   static getSchema() {
     throw new Error('getSchema() must be implemented by subclass');

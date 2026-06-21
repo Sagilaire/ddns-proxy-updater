@@ -17,10 +17,10 @@ function timeAgo(iso) {
   return `${d}d ago`;
 }
 
-function statusOf(host) {
-  if (!host.enabled) return 'disabled';
-  if (!host.lastUpdateStatus) return 'idle';
-  return host.lastUpdateStatus === 'success' ? 'success' : 'error';
+function domainStatus(d) {
+  if (!d.enabled) return 'disabled';
+  if (!d.lastUpdateStatus) return 'idle';
+  return d.lastUpdateStatus === 'success' ? 'success' : 'error';
 }
 
 export default function Dashboard() {
@@ -56,10 +56,18 @@ export default function Dashboard() {
     }
   };
 
-  const enabledHosts = useMemo(
-    () => (data?.hosts || []).filter((h) => h.enabled),
-    [data]
-  );
+  const { enabledDomains, enabledRecords, errors } = useMemo(() => {
+    const ds = data?.domains || [];
+    const rs = data?.records || [];
+    const domainById = Object.fromEntries(ds.map((d) => [d.id, d]));
+    const enabledR = rs.filter((r) => r.enabled && (domainById[r.domainId]?.enabled ?? false));
+    const errs = [...ds.filter((d) => d.enabled && d.lastUpdateStatus === 'error'), ...enabledR.filter((r) => r.lastUpdateStatus === 'error')];
+    return {
+      enabledDomains: ds.filter((d) => d.enabled),
+      enabledRecords: enabledR,
+      errors: errs,
+    };
+  }, [data]);
 
   return (
     <div className="space-y-6">
@@ -70,9 +78,7 @@ export default function Dashboard() {
               {data?.publicIp || <span className="text-slate-500">—</span>}
             </div>
             {data?.publicIp && (
-              <span className="text-xs text-slate-500 mb-1.5">
-                checked {timeAgo(data.lastIpCheckAt)}
-              </span>
+              <span className="text-xs text-slate-500 mb-1.5">checked {timeAgo(data.lastIpCheckAt)}</span>
             )}
           </div>
         </Card>
@@ -97,38 +103,37 @@ export default function Dashboard() {
           )}
         >
           <div className="text-sm text-slate-400">
-            {enabledHosts.length === 0
-              ? 'No enabled hosts configured yet.'
-              : `Triggers an immediate cycle for ${enabledHosts.length} enabled host${enabledHosts.length === 1 ? '' : 's'}.`}
+            {enabledRecords.length === 0
+              ? 'No enabled records configured yet.'
+              : `Triggers an immediate cycle for ${enabledRecords.length} enabled record${enabledRecords.length === 1 ? '' : 's'} across ${enabledDomains.length} domain${enabledDomains.length === 1 ? '' : 's'}.`}
           </div>
         </Card>
       </div>
 
-      <Card title="Hosts">
+      <Card title="Domains">
         {err && (
-          <div className="mb-4 text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2">
-            {err}
-          </div>
+          <div className="mb-4 text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2">{err}</div>
         )}
         {!data ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm"><Spinner /> Loading…</div>
-        ) : data.hosts.length === 0 ? (
+        ) : data.domains.length === 0 ? (
           <div className="text-slate-400 text-sm">
-            No hosts yet. <a href="/hosts" className="text-accent-300 hover:text-accent-200">Add your first host →</a>
+            No domains yet. <a href="/hosts" className="text-accent-300 hover:text-accent-200">Add your first domain →</a>
           </div>
         ) : (
           <ul className="divide-y divide-slate-800">
-            {data.hosts.map((h) => (
-              <li key={h.id} className="py-3 flex items-center gap-4">
+            {data.domains.map((d) => (
+              <li key={d.id} className="py-3 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-medium truncate">{h.config.host}.{h.config.domain}</span>
-                    <span className="text-xs text-slate-500 uppercase">{h.provider}</span>
-                    <StatusBadge status={statusOf(h)} />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-medium truncate">{d.displayName}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 uppercase">{d.provider}</span>
+                    <StatusBadge status={domainStatus(d)} />
+                    <span className="text-xs text-slate-500">{d.recordCount} record{d.recordCount === 1 ? '' : 's'}</span>
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Last IP {h.lastCheckedIp || '—'} · {timeAgo(h.lastUpdateAt)}
-                    {h.lastError && <span className="text-rose-300"> · {h.lastError}</span>}
+                    Last update {timeAgo(d.lastUpdateAt)}
+                    {d.lastError && <span className="text-rose-300"> · {d.lastError}</span>}
                   </div>
                 </div>
               </li>
@@ -136,6 +141,19 @@ export default function Dashboard() {
           </ul>
         )}
       </Card>
+
+      {errors.length > 0 && (
+        <Card title="Recent errors">
+          <ul className="space-y-2">
+            {errors.slice(0, 5).map((e, i) => (
+              <li key={i} className="text-sm">
+                <span className="text-slate-400">{e.displayName || e.hostname || e.id}: </span>
+                <span className="text-rose-300">{e.lastError || 'unknown'}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

@@ -16,26 +16,24 @@ const Store = require('./services/Store');
 const DdnsManager = require('./services/DdnsManager');
 const IPDetector = require('./services/IPDetector');
 const { ensureAdminPassword, issueToken, authMiddleware, verifyPassword } = require('./middleware/auth');
+const { listProviders } = require('./providers');
 
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
-const hostRoutes = require('./routes/hosts');
+const domainRoutes = require('./routes/domains');
+const recordRoutes = require('./routes/records');
 const statusRoutes = require('./routes/status');
 const settingsRoutes = require('./routes/settings');
 
 async function bootstrap() {
-  // 1. Ensure admin password (hash it if ADMIN_PASSWORD provided).
   await ensureAdminPassword();
 
-  // 2. Load configuration from disk.
   const store = new Store(logger);
   await store.load();
 
-  // 3. Initialize services.
   const ipDetector = new IPDetector(config.ipProviders, config.ipRequestTimeoutMs, logger);
   const ddnsManager = new DdnsManager(store, ipDetector, logger);
 
-  // 4. Build Express app.
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -45,7 +43,6 @@ async function bootstrap() {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-
   if (allowedOrigins.length > 0) {
     app.use(cors({ origin: allowedOrigins, credentials: false }));
   }
@@ -58,16 +55,21 @@ async function bootstrap() {
     message: { error: 'Too many login attempts, try again later.' },
   });
 
-  // 5. Public routes.
+  // Public routes.
   app.use('/api/health', healthRoutes);
+  app.use('/api/providers', (req, res) => res.json({ providers: listProviders() }));
   app.use('/api/auth', loginLimiter, authRoutes({ verifyPassword, issueToken }));
 
-  // 6. Authenticated routes.
-  app.use('/api/hosts', authMiddleware, hostRoutes({ store, ddnsManager }));
-  app.use('/api/status', authMiddleware, statusRoutes({ store, ddnsManager, ipDetector }));
-  app.use('/api/settings', authMiddleware, settingsRoutes({ store, ddnsManager }));
+  // Authenticated routes.
+  const auth = authMiddleware;
+  app.use('/api/domains', auth, domainRoutes({ store, ddnsManager }));
+  // Nested records live under their domain.
+  app.use('/api/domains/:domainId/records', auth, recordRoutes.nested({ store }));
+  // Also keep a flat record listing under /api/records for the Dashboard.
+  app.use('/api/records', auth, recordRoutes({ store, ddnsManager }));
+  app.use('/api/status', auth, statusRoutes({ store, ddnsManager, ipDetector }));
+  app.use('/api/settings', auth, settingsRoutes({ store, ddnsManager }));
 
-  // 7. 404 + error handling.
   app.use((req, res) => res.status(404).json({ error: 'Not found' }));
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
@@ -75,15 +77,12 @@ async function bootstrap() {
     res.status(500).json({ error: 'Internal server error' });
   });
 
-  // 8. Start scheduler.
   await ddnsManager.start();
 
-  // 9. Start HTTP server.
   const server = app.listen(config.port, config.host, () => {
     logger.info(`DDNS updater backend listening on http://${config.host}:${config.port}`);
   });
 
-  // 10. Graceful shutdown.
   const shutdown = async (signal) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     ddnsManager.stop();

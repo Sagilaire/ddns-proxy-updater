@@ -13,7 +13,7 @@ const config = require('../config');
  * The endpoint:
  *  GET https://dynamicdns.park-your-domain.com/update
  *      ?host=<host>     (e.g. "@", "www", "sub")
- *      &domain=<domain> (e.g. "example.com")
+ *      &domain=<domain> (the apex, e.g. "example.com")
  *      &password=<dynamic-dns-password>
  *      &ip=<optional ip>
  *
@@ -24,6 +24,9 @@ const config = require('../config');
  *    <Err1>...</Err1>
  *    ...
  *  </interface-response>
+ *
+ * The Dynamic DNS password is per-DOMAIN (not per-subdomain), so it lives in
+ * domainFields and is shared by all records attached to the same domain.
  */
 class NamecheapProvider extends BaseProvider {
   static getName() {
@@ -31,11 +34,22 @@ class NamecheapProvider extends BaseProvider {
   }
 
   static getSchema() {
-    return [
-      { key: 'domain', label: 'Domain', type: 'text', required: true, help: 'e.g. example.com' },
-      { key: 'host', label: 'Host', type: 'text', required: true, help: '@ for apex, www, subdomain, ...' },
-      { key: 'password', label: 'Dynamic DNS Password', type: 'password', required: true },
-    ];
+    return {
+      label: 'Namecheap',
+      help: 'Uses Namecheap Dynamic DNS. You must enable DDNS for the domain in the Namecheap panel first.',
+      domainFields: [
+        // The apex is constant for the whole domain, store it in settings.
+        { key: 'domainName', label: 'Domain', type: 'text', required: true,
+          help: 'Apex domain (e.g. example.com). One dynamic-DNS password per apex.' },
+        { key: 'password', label: 'Dynamic DNS Password', type: 'password', required: true,
+          help: 'From Namecheap panel → Domain List → Manage → Advanced DNS.' },
+      ],
+      recordFields: [
+        // Per-record: just the subdomain label; "@" means the apex.
+        { key: 'host', label: 'Subdomain', type: 'text', required: true,
+          help: 'Subdomain label (e.g. "www", "api", "mail"). Use "@" for the apex.' },
+      ],
+    };
   }
 
   async update(ip) {
@@ -43,25 +57,19 @@ class NamecheapProvider extends BaseProvider {
       return { ok: false, message: 'No IP provided.' };
     }
 
-    const { domain, host, password } = this.config;
-    if (!domain || !host || !password) {
+    const { domainName, host, password } = this.config;
+    if (!domainName || !host || !password) {
       return { ok: false, message: 'Missing required fields (domain, host, password).' };
     }
 
     const url = 'https://dynamicdns.park-your-domain.com/update';
-    const params = {
-      host,
-      domain,
-      password,
-      ip,
-    };
+    const params = { host, domain: domainName, password, ip };
 
     try {
       const response = await axios.get(url, {
         params,
         timeout: config.providerRequestTimeoutMs,
         responseType: 'text',
-        // The endpoint rejects POST; force GET and disable automatic redirect to POST.
         maxRedirects: 0,
         headers: { 'User-Agent': 'ddns-updater-backend/1.0' },
         validateStatus: () => true,
@@ -85,9 +93,6 @@ class NamecheapProvider extends BaseProvider {
     }
   }
 
-  /**
-   * Parse the small Namecheap XML response without pulling a full XML library.
-   */
   _parseXml(xml) {
     const grab = (tag) => {
       const m = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i').exec(xml);
