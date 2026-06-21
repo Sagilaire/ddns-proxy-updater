@@ -1,8 +1,8 @@
 {
-  "name": "ddns-updater-backend",
+  "name": "proxy-ddns-updater-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "DDNS updater backend with extensible provider interface",
+  "description": "Proxy DDNS Updater — backend with extensible provider interface",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

@@ -21,7 +21,7 @@ class IPDetector {
         const res = await axios.get(url, {
           timeout: this.timeoutMs,
           responseType: 'text',
-          headers: { 'User-Agent': 'ddns-updater-backend/1.0' },
+          headers: { 'User-Agent': 'proxy-ddns-updater-backend/1.0' },
           validateStatus: (s) => s >= 200 && s < 300,
           transformResponse: [(d) => (typeof d === 'string' ? d.trim() : d)],
         });

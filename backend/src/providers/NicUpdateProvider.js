@@ -72,7 +72,7 @@ class NicUpdateProvider extends BaseProvider {
         maxRedirects: 0,
         headers: {
           Authorization: `Basic ${auth}`,
-          'User-Agent': 'ddns-updater-backend/1.0',
+          'User-Agent': 'proxy-ddns-updater-backend/1.0',
           ...this._extraRequestOptions(),
         },
         validateStatus: () => true,

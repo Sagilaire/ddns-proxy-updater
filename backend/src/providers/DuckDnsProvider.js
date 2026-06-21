@@ -68,7 +68,7 @@ class DuckDnsProvider extends BaseProvider {
       const res = await axios.get('https://www.duckdns.org/update', {
         params: { domains: hostname, token, ip },
         timeout: config.providerRequestTimeoutMs,
-        headers: { 'User-Agent': 'ddns-updater-backend/1.0' },
+        headers: { 'User-Agent': 'proxy-ddns-updater-backend/1.0' },
         validateStatus: () => true,
       });
       const body = typeof res.data === 'string' ? res.data : String(res.data ?? '');
@@ -94,7 +94,7 @@ class DuckDnsProvider extends BaseProvider {
     try {
       const res = await axios.get('https://www.duckdns.org/', {
         timeout: Math.min(5000, config.providerRequestTimeoutMs),
-        headers: { 'User-Agent': 'ddns-updater-backend/1.0 test' },
+        headers: { 'User-Agent': 'proxy-ddns-updater-backend/1.0 test' },
         validateStatus: () => true,
       });
       return { ok: res.status === 200, message: `DuckDNS reachable (HTTP ${res.status}). Token validity can only be checked via Refresh.` };

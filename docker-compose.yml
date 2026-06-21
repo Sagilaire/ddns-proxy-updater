@@ -2,8 +2,8 @@ services:
   backend:
     build:
       context: ./backend
-    image: ddns-updater-backend:local
-    container_name: ddns-backend
+    image: proxy-ddns-updater-backend:local
+    container_name: proxy-ddns-backend
     restart: unless-stopped
     environment:
       PORT: "4010"
@@ -33,8 +33,8 @@ services:
   frontend:
     build:
       context: ./frontend
-    image: ddns-updater-frontend:local
-    container_name: ddns-frontend
+    image: proxy-ddns-updater-frontend:local
+    container_name: proxy-ddns-frontend
     restart: unless-stopped
     depends_on:
       backend:

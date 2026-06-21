@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * DDNS updater — backend entry point.
+ * Proxy DDNS updater — backend entry point.
  * Bootstraps configuration, storage, ddns scheduler, routes, then starts the HTTP server.
  */
 
@@ -80,7 +80,7 @@ async function bootstrap() {
   await ddnsManager.start();
 
   const server = app.listen(config.port, config.host, () => {
-    logger.info(`DDNS updater backend listening on http://${config.host}:${config.port}`);
+    logger.info(`Proxy DDNS updater backend listening on http://${config.host}:${config.port}`);
   });
 
   const shutdown = async (signal) => {

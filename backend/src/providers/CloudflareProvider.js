@@ -62,7 +62,7 @@ class CloudflareProvider extends BaseProvider {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      'User-Agent': 'ddns-updater-backend/1.0',
+      'User-Agent': 'proxy-ddns-updater-backend/1.0',
     };
   }
 

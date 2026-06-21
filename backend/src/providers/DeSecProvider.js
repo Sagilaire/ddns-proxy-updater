@@ -48,7 +48,7 @@ class DeSecProvider extends NicUpdateProvider {
    * a fixed sentinel so logs are stable.
    */
   _auth() {
-    return { username: this.config.username || 'ddns-updater', password: this.config.token };
+    return { username: this.config.username || 'proxy-ddns-updater', password: this.config.token };
   }
 
   _parseResponse(text, status) {

@@ -1,5 +1,5 @@
 {
-  "name": "ddns-updater-frontend",
+  "name": "proxy-ddns-updater-frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",

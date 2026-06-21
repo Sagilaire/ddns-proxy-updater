@@ -1,6 +1,9 @@
-# DDNS Updater
+# Proxy DDNS Updater
 
-A small, self-hosted DDNS updater with a web UI, **extensible provider interface**, and configurable update period.
+A small, self-hosted dynamic-DNS updater that acts as a **proxy** between your DNS provider and your
+records. Web UI, **extensible provider interface**, and configurable update period — one console for
+every host (apex included) you keep pointed at your current IP.
+
 Inspired by [`qdm12/ddns-updater`](https://github.com/qdm12/ddns-updater), but with a **REST API** for managing
 domains and records without restarting the service and a **React** front-end.
 

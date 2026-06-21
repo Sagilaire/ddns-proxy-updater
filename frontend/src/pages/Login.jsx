@@ -36,7 +36,7 @@ export default function Login() {
             D
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">DDNS Updater</h1>
+            <h1 className="text-xl font-semibold text-white">Proxy DDNS Updater</h1>
             <p className="text-xs text-slate-400">Sign in to manage your DNS records</p>
           </div>
         </div>

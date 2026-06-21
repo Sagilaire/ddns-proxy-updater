@@ -71,7 +71,7 @@ class NamecheapProvider extends BaseProvider {
         timeout: config.providerRequestTimeoutMs,
         responseType: 'text',
         maxRedirects: 0,
-        headers: { 'User-Agent': 'ddns-updater-backend/1.0' },
+        headers: { 'User-Agent': 'proxy-ddns-updater-backend/1.0' },
         validateStatus: () => true,
       });
 

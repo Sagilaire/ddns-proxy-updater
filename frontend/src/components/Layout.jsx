@@ -60,7 +60,7 @@ export default function Layout({ children }) {
     '/':        'Dashboard',
     '/hosts':   'Hosts',
     '/settings': 'Settings',
-  }[location.pathname] || 'DDNS Updater';
+  }[location.pathname] || 'Proxy DDNS Updater';
 
   return (
     <div className="min-h-screen flex">
@@ -71,7 +71,7 @@ export default function Layout({ children }) {
               D
             </div>
             <div>
-              <div className="text-white font-semibold leading-tight">DDNS Updater</div>
+              <div className="text-white font-semibold leading-tight">Proxy DDNS Updater</div>
               <div className="text-xs text-slate-400">v1.0</div>
             </div>
           </div>
